@@ -1,0 +1,11 @@
+#!/bin/bash
+if [ $2 == "c" ];
+then
+	echo "$1 celsius = `echo "($1 * 9/5)+32" | bc ` fahrenheit";
+fi
+if [ $2 == "f" ];
+then
+	echo "$1 fahrenheit = `echo "($1 - 32) * 5/9" | bc` celsius";
+fi
+
+

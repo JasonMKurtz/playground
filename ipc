@@ -1,0 +1,22 @@
+#!/bin/bash
+# @author Jason Kurtz
+# @description A bash script for calculating the number of addresses in any size block of IPv4 or IPv6. 
+# @version 0.1
+# @syntax ./ipc [4 | 6] [size of block] 
+# @example ./ipc 6 48 (Determine the number of addresses in a /48 block of IPv6)
+# @example ./ipc 4 16 (Determine the number of addresses in a /16 block of IPv4)
+
+if [ "$1" == "4" ]; 
+then
+	echo "IPv4 /$2: `echo "2^(32-$2)" | bc`"
+	exit 
+fi 
+if [ "$1" == "6" ]; 
+then	
+	echo "IPv6 /$2: `echo "2^(128-$2)" | bc`"
+	exit 
+else 
+	echo "Not a IP version... $1"
+	exit 
+fi
+

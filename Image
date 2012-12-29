@@ -1,0 +1,59 @@
+#!/usr/bin/php
+<?php
+	/* @author    Jason Kurtz (Liber) 
+	 * @name      Image 
+	 * @version   0.1
+	 * @desc      A script designed to resize and relocate an image, with help from image.class.php
+	 * @example   ./Image --src [src] --dest [dest] [ --height [new height] --width [new width] | --scale [height/width ratio] ] 
+	 */ 
+
+	require_once("image.class.php"); 
+	array_shift($argv);
+
+	$longopts = array("src", "dest", "height", "width"); 
+	$options  = getopt("s::d::h::w::", $longopts); 
+
+	$_options = array(); 
+
+	foreach ($options as $opt => $value) { 
+		switch ($opt) {
+			case "src": 
+			case "s": 
+				$_options['src'] = $value; 
+			case "dest": 
+			case "d": 
+				$_options['dest'] = $value; 
+			case "height": 
+			case "h": 
+				$_options['height'] = $value; 
+			case "width":
+			case "w": 
+				$_options['width'] = $value; 
+			case "scale": 
+			case "s": 
+				$_options['scale'] = $value; 
+		}
+	}
+
+	if (!isset($_options['src']) || !isset($_options['dest'])) 
+		die("Both SRC (s) and DEST (d) must be specified.\n"); 
+
+	if (isset($_options['height']) && isset($_options['width'])) {
+		if (isset($_options['scale']) && $_options['scale'] != "") 
+			die("SCALE (s) can not be specified if WIDTH (w) and HEIGHT (h) are.\n"); 
+		
+		$Image = new Image($_options['src']); 
+		$Image->ResizeImage($_options['dest'], $_options['height'], $_options['width']); 
+		echo sprintf("Resized %s (%s x %s) and renamed to %s.\n", 
+					basename($_options['src']), $_options['height'], $_options['width'], basename($_options['dest'])); 
+	} else {
+		if (!isset($_options['scale'])) 
+			die("Both HEIGHT (h) and WIDTH (w) must be specified if SCALE (s) is not.\n"); 
+
+		$Image = new Image($_options['src']); 
+		$Image->ScaleImage($_options['dest'], $_options['scale']); 
+		echo sprintf("Scaled %s by a factor of %s (From %sx%s to %sx%s) and renamed to %s", 
+					basename($_options['src']), $_options['scale'], $Image->oldimg['width'], $Image->oldimg['height'], 
+							$Image->newimg['width'], $Image->newimg['height'], basename($_options['dest'])); 
+	}
+?>

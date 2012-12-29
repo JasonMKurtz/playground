@@ -1,0 +1,105 @@
+#!/usr/bin/php
+<?php
+	/* @author Jason Kurtz (Liber)
+	 * @name Commit 
+	 * @version 0.1
+	 * @desc A script designed to commit, local copy (from /svn/REPO/branch to /svn_http/REPO/branch) and 
+	 * @desc ... optionally remote copy (between servers) for load balancing purposes. 
+	 */ 
+
+	/* A script designed to be run in a /svn/, /svn_http/ environment. 
+	 ** Directory Structure: $HOME/svn/REPO/{trunk,prod} $HOME/svn_http/REPO/{trunk,prod}
+
+	 * Parameters
+	 *** At least one of the following MUST be specified. 
+	 *** * -t (--trunk): Commit the TRUNK branch of the repository. 
+	 *** * -p (--prod) : Commit the PROD branch of the repository. 
+
+	 *** Any of the following MAY be specified. 
+ 	 *** * -c (--copy) : Copy the specified branch to a remote server. 
+
+	 *** Debug options. 
+         *** * -d (--dry)  : Dry run the script, printing the commands it would've run to the screen. 
+
+	 * Examples
+	 *** /path/to/script --trunk --copy :: Copy the trunk branch of the current repo to its HTTP directory and to a remote server.
+
+	 ** /path/to/script -p -d           :: Do a dry run as if we were going to copy the prod branch to its HTTP dir. 
+	 */ 
+	
+	DEFINE('SVN_BASE', '/home/ziber/svn/'); 
+	DEFINE('WEB_BASE', '/home/ziber/svn_http/');
+
+	$repo = explode("/", getcwd()); // /home/ziber/svn/something = ["something", "svn", "ziber", "home"] 
+	array_shift($repo); // remove blank array item
+	if ($repo[2] != "svn" || !isset($repo[3])) 
+		die("This script must be run from within a local subversion directory\n"); 
+
+	$repo = $repo[3]; // /home/ziber/svn/{repo}
+
+	$longopts = array("trunk", "prod", "dry", "copy"); 
+	$options = getopt("t::p::d::c::", $longopts); 
+
+	$src = SVN_BASE . $repo . "/{type}/httpdocs/"; 
+	$dest = WEB_BASE . $repo . "/{type}/"; 
+
+	$_options = array(); 
+	$_options['type'] = ""; // trunk or prod?
+	$_options['dry']  = 0;  // dry run?
+	$_options['copy'] = 0;  // are we copying svn_http to a remote server?
+
+	foreach ($options as $opt => $value) { 
+		switch ($opt) { 
+			case "t": 
+			case "trunk": 
+				$_options['type'] = "trunk"; 
+				$src  = str_replace("{type}", $_options['type'], $src);  
+				$dest = str_replace("{type}", $_options['type'], $dest); 
+				break; 
+			case "p": 
+			case "prod": 
+				$_options['type'] = "prod"; 
+                                $src  = str_replace("{type}", $_options['type'], $src); 
+                                $dest = str_replace("{type}", $_options['type'], $dest); 
+                                break;
+			case "d": 
+			case "dry": 
+				$_options['dry'] = 1; 
+				break; 
+			case "c": 
+			case "copy": 
+				$_options['copy'] = 1; 
+				break; 
+			case "b":
+			case "backup": 
+				$_options['backup'] = 1; 
+				break; 
+		}
+	}
+
+	// die("Copying? ".$_options['copy']); 
+
+	if ($_options['type'] == "") 
+		die("Either TRUNK (t) or PROD (p) must be specified.\n");
+
+	$export = "svn export --force ".$src." ".$dest; 
+	$copy   = "scp -r ".$dest." pandora:".WEB_BASE.$repo."/";
+
+	if ($_options['backup'] == 1) { 
+		
+
+	if ($_options['dry'] == 1) {
+		echo "Dry run...\n"; 
+		echo $export . "\n"; 
+		if ($_options['copy'] == 1) 
+			echo $copy . "\n"; 
+	} else {
+		system($export . ">/dev/null"); 
+		echo "Exported ".strtoupper($_options['type'])." from ".$src." to ".$dest."\n"; 
+		
+		if ($_options['copy'] == 1) {
+			system($copy . ">/dev/null"); 
+			echo "Copied ".strtoupper($_options['type'])." from ".$dest." to pandora:".WEB_BASE.$repo."\n"; 
+		}
+	}
+?>
