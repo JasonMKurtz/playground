@@ -32,10 +32,14 @@
 		return csplice(ipcount($version, $second) / ipcount($version, $first)); 
 	}
 
+	$file = $argv[0]; 
 	array_shift($argv); 
 	if ($argc == 2) {
 		echo sprintf("IPv6 /%s: %s\n", $argv[0], csplice(ipcount(6, $argv[0])));  
 	} else if ($argc == 3) { 
+                if ($argv[0] < $argv[1]) { 
+                        die(sprintf("Syntax error: %s <version> <larger subnet> <smaller subnet>\n", $file)); 
+                }   
 		echo sprintf("IPv6: %s /%s's in a /%s\n", subnetCount(6, $argv[0], $argv[1]), $argv[0], $argv[1]);
 	}
 ?>
