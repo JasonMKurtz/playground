@@ -2,6 +2,3 @@
 import os, string, sys, string
 # base = input
 def toDecimal(input, base = 2): return sum([(base ** pos) * string.atoi(i) for pos, i in enumerate(input[::-1])])
-def toBinary(n): ''.join([ str((n >> b ) & 1) for b in range( n.bit_length() )][::-1])
-
-print toBinary(2)
