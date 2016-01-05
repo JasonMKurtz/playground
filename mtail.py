@@ -22,4 +22,17 @@ class File:
             f.seek(-scanned, 2)
             return '\n'.join([ line.strip() for line in f.readlines()[-lines2find:] ])
 
-print File("abc", 10).tail(10)        
+    def unique_tail(self, lines): 
+        lines = self.tail(lines).split("\n")
+        b = [ ] 
+        for i in lines: 
+            if i not in b: 
+                b.append(i)
+
+        return '\n'.join(b)
+
+
+f = File("abc", 10)
+#print f.tail(10)        
+#print '\n\n'
+print f.unique_tail(10)
