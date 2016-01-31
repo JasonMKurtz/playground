@@ -26,7 +26,9 @@ def words(f):
             postnoon = now[-2:].lower() == "pm"
 
         hr  = num2words(hour)
-        if int(minute) < 10: 
+        if int(minute) == 0: 
+            min = "o'clock"
+        elif int(minute) < 10: 
             min = "oh " + num2words(minute)
         else: 
             min = num2words(minute)
@@ -70,10 +72,11 @@ def num2words(num):
                  
     return ret
             
+@words
 def what_time(str=""):
     return time.strftime("%I:%M:%S%p") if str == "" else str
 
-print what_time("07:32:40PM")
+print what_time()
 """
 07:32:40PM
 @military 19:32:40
