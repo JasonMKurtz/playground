@@ -36,10 +36,10 @@ def words(f):
         extra = ""
         if postnoon != -1: 
             if postnoon: 
-                if hour >= 5: 
-                    extra = "in the evening"
-                else: 
+                if int(hour) <= 5: 
                     extra = "in the afternoon"
+                else: 
+                    extra = "in the evening"
             else: 
                 extra = "in the morning" 
         
