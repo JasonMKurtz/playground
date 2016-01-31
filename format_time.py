@@ -70,8 +70,13 @@ def num2words(num):
                  
     return ret
             
-@military
 def what_time(str=""):
     return time.strftime("%I:%M:%S%p") if str == "" else str
 
-print what_time()
+print what_time("07:32:40PM")
+"""
+07:32:40PM
+@military 19:32:40
+@words seven thirty two in the evening
+@words, @military nineteen thirty two
+"""
