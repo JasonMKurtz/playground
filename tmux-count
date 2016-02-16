@@ -1,0 +1,3 @@
+#!/bin/bash
+count=$(echo $(tmux ls | awk '{print $2}' | tr '\n' "+" | sed -e 's/^/\(/' -e 's/\+$/\)/') | bc)
+echo "There are $count tmux windows open"
