@@ -5,7 +5,7 @@ import string
 def isAnagram(word):
     print("Checking: %s" % (word))
     word = word.replace(" ", "")
-    for i in range(len(word) / 2):
+    for i in range(len(word)):
         li = -(i + 1)
         print("Checking the pair (%s, %s)" % (word[i], word[li]))
         if string.lower(word[i]) != string.lower(word[li]):
