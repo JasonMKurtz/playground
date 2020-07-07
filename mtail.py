@@ -1,11 +1,12 @@
 #!/usr/bin/python
 class File: 
-    def __init__(self, filename, blocksize=1024): 
+    def __init__(self, filename, blocksize=2048): 
         self.file = filename
         self.block = blocksize
         self.reads = 0
 
-    def numreads(self): 
+    @property
+    def reads(self): 
         return self.reads
 
     def tail(self, lines2find): 
@@ -13,7 +14,7 @@ class File:
             f.seek(0, 2)
             total_bytes = f.tell()
             scanned, lines = 0, 0
-            while (total_bytes > scanned and lines2find + 2 >= lines): 
+            while (total_bytes > scanned and lines2find >= lines): 
                 byte_block = min(self.block, total_bytes - scanned)
                 f.seek(-byte_block, 2)
                 scanned += byte_block
@@ -23,16 +24,10 @@ class File:
             return '\n'.join([ line.strip() for line in f.readlines()[-lines2find:] ])
 
     def unique_tail(self, lines): 
-        lines = self.tail(lines).split("\n")
-        b = [ ] 
-        for i in lines: 
-            if i not in b: 
-                b.append(i)
-
-        return '\n'.join(b)
+        unique = set(self.tail(lines).split("\n"))
+        return '\n'.join(unique)
 
 
-f = File("abc", 10)
-#print f.tail(10)        
-#print '\n\n'
-print f.unique_tail(10)
+f = File("abc")
+print f.tail(10)        
+print f.reads
