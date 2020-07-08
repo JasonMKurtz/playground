@@ -2,7 +2,7 @@
 
 import string
 
-def isAnagram(word):
+def isPalindrome(word):
     print("Checking: %s" % (word))
     word = word.replace(" ", "")
     for i in range(len(word) / 2):
@@ -12,8 +12,8 @@ def isAnagram(word):
             return False
     return True
 
-print(isAnagram("ana"))
-print(isAnagram("assa"))
-print(isAnagram("asdf"))
-print(isAnagram("A man a plan a canal panama"))
+print(isPalindrome("ana"))
+print(isPalindrome("assa"))
+print(isPalindrome("asdf"))
+print(isPalindrome("A man a plan a canal panama"))
 
