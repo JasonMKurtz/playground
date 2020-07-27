@@ -6,12 +6,6 @@ type Q struct {
 	items []int
 }
 
-func MakeQ(q Queue, nums []int) {
-	for _, i := range nums {
-		q.Add(i)
-	}
-}
-
 func (q *Q) IsEmpty() bool {
 	return len(q.items) == 0
 }
@@ -54,6 +48,12 @@ func TakeItem(q Queue) int {
 type Queue interface {
 	Dequeue() int
 	Add(int)
+}
+
+func MakeQ(q Queue, nums []int) {
+	for _, i := range nums {
+		q.Add(i)
+	}
 }
 
 func main() {
