@@ -41,10 +41,6 @@ func (fq *FQ) Dequeue() int {
 	return first
 }
 
-func TakeItem(q Queue) int {
-	return q.Dequeue()
-}
-
 type Queue interface {
 	Dequeue() int
 	Add(int)
@@ -54,6 +50,10 @@ func MakeQ(q Queue, nums []int) {
 	for _, i := range nums {
 		q.Add(i)
 	}
+}
+
+func TakeItem(q Queue) int {
+	return q.Dequeue()
 }
 
 func main() {
