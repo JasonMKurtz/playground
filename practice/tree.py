@@ -28,6 +28,13 @@ def make():
     r.right.right = Node(6)
     return r
 
+"""
+make() gives us the following tree:
+                0
+        1               2
+    3       4       5       6
+"""
+
 def inOrder(node):
     if node:
         inOrder(node.left)
@@ -46,6 +53,35 @@ def postOrder(node):
         postOrder(node.right)
         print(node.val)
 
+"""
+>>> from tree import * 
+>>> t = make()
+>>> inOrder(t)
+3
+1
+4
+0
+5
+2
+6
+>>> preOrder(t)
+0
+1
+3
+4
+2
+5
+6
+>>> postOrder(t) 
+3
+4
+1
+5
+6
+2
+0
+"""
+
 from queue import Queue
 from typing import Dict
 
@@ -63,3 +99,14 @@ def bfs(node):
             if not seen.get(node):
                 visited.put(node)
 
+
+"""
+>>> bfs(t)
+(0)
+(1)
+(2)
+(3)
+(4)
+(5)
+(6)
+"""
