@@ -41,4 +41,5 @@ class Graph:
             for node in self.pairs.get(item):
                 if node not in seen:
                     q.put((node, path + [node]))
+                    seen.add(node)
         return []
