@@ -19,23 +19,41 @@ class Node:
 def make(): 
     return Node(0, [
         Node(1, [Node(2, [Node(3), Node(4), Node(8)])]),
-        Node(4, [Node(5, [Node(6), Node(7), Node(9)])]),
+        Node(10, [Node(15, [Node(16), Node(17), Node(9)])]),
     ])
 
 from queue import Queue
 from typing import Dict
 
-def bfs(node):
+"""
+NameError: name 'bfs_shortest_path' is not defined
+>>> from path_exists import * 
+>>> bfs_shortest_path(make(), 15)
+[0, 10, 15]
+"""
+
+def bfs_shortest_path(node, target):
     # for each node in our tree, visit its children, and their children, and so on
+    if node.val == target:
+        return [node.val, target]
+
     visited = Queue()
-    visited.put(node)
+    visited.put((node, [node.val]))
     seen: Dict[Node, bool] = {node: True}
-    levels: List[int] = []
+    path = [node.val]
     while not visited.empty():
-        n = visited.get()
-        print(n)
+        n, path = visited.get()
+        if n.val == target:
+            return path + [n.val]
+
         for node in n.neighbors:
             if node is None:
                 continue
+        
+            if node.val == target:
+                return path + [node.val]
+            
             if not seen.get(node):
-                visited.put(node)
+                visited.put((node, path + [node.val]))
+            
+    
