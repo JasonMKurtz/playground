@@ -8,11 +8,35 @@ class Graph:
     def __init__(self):
         self.pairs = {
             10: [5, 12],
-            5: [2, 11],
+            5: [2, 7],
             12: [11, 17],
         }
     
-    def is_bst(self, start) -> bool:
+    def inorder(self, item):
+        node = self.pairs.get(item)
+
+        if node:
+            self.inorder(node[0])
+        print(item)
+        if node:
+            self.inorder(node[1])
+    
+    def is_bst(self, item, l = None, r = None) -> bool:
+        node = self.pairs.get(item)
+        if node is None:
+            return True
+        
+        if l is not None and item < l:
+            return False
+        
+        if r is not None and item > r:
+            return False
+        
+        return self.is_bst(node[0], l, item) and \
+            self.is_bst(node[1], item, r)
+
+    
+    def is_bst_bad(self, start) -> bool:
         # For every subtree, [0] < root < [1]
         node = self.pairs.get(start)
         if node is None:
