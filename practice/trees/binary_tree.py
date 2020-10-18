@@ -35,30 +35,6 @@ class Graph:
         return self.is_bst(node[0], l, item) and \
             self.is_bst(node[1], item, r)
 
-    
-    def is_bst_bad(self, start) -> bool:
-        # For every subtree, [0] < root < [1]
-        node = self.pairs.get(start)
-        if node is None:
-            return True
-
-        if len(node) > 2:
-            return False
-    
-        left = node[0]
-        right = node[1]
-
-        if left is not None and left > start:
-            return False
-
-        if right is not None and right < start:
-            return False
-
-        if not self.is_bst(left) or not self.is_bst(right):
-            return False
-
-        return True
-    
     def is_binary_tree(self, start) -> bool:
         # Does our node exist?
         # Does our node have more than two neighbors?
