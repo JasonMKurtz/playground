@@ -30,7 +30,7 @@ class Graph:
         if right is not None and right < start:
             return False
 
-        if not self.is_bst(node[0]) or not self.is_bst(node[1]):
+        if not self.is_bst(left) or not self.is_bst(right):
             return False
 
         return True
