@@ -9,8 +9,29 @@ class Graph:
         self.pairs = {
             10: [5, 12],
             5: [2, 7],
-            12: [11, 17],
+            12: [9, 17],
         }
+    
+    def has_cycle(self, item, visited={}) -> bool:
+        if visited.get(item):
+            return True
+        
+        node = self.pairs.get(item)
+        if not node:
+            return False
+        
+        visited.update({item: True})
+        for item in node:
+            if self.has_cycle(item, visited):
+                return True
+        return False
+    
+    def preorder(self, item):
+        node = self.pairs.get(item)
+        print(item)
+        if node:
+            self.preorder(node[0])
+            self.preorder(node[1])
     
     def inorder(self, item):
         node = self.pairs.get(item)
@@ -21,19 +42,28 @@ class Graph:
         if node:
             self.inorder(node[1])
     
-    def is_bst(self, item, l = None, r = None) -> bool:
+    def postorder(self, item):
+        node = self.pairs.get(item)
+        if node:
+            self.postorder(node[0])
+            self.postorder(node[1])
+        print(item)
+    
+    def is_bst(self, item, minval = None, maxval = None) -> bool:
+        if minval is not None and item < minval:
+            return False
+        
+        if maxval is not None and item > maxval:
+            return False
+
         node = self.pairs.get(item)
         if node is None:
             return True
         
-        if l is not None and item < l:
-            return False
-        
-        if r is not None and item > r:
-            return False
-        
-        return self.is_bst(node[0], l, item) and \
-            self.is_bst(node[1], item, r)
+        left = self.is_bst(node[0], minval, item)
+        right = self.is_bst(node[1], item, maxval)
+
+        return left and right
 
     def is_binary_tree(self, start) -> bool:
         # Does our node exist?
