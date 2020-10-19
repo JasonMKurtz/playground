@@ -18,12 +18,9 @@ class TrieNode:
         return trie
 
     def contains(self, prefix: str) -> bool:
-        if not len(prefix):
+        if not len(prefix) or not len(self.trie):
             return False
-        
-        if not len(self.trie):
-            return False
-        
+
         if self.trie.get(prefix):
             return True
         
