@@ -17,7 +17,7 @@ class TrieNode:
             temp_dict[self._end] = self._end
         return trie
     
-    def traverse(self, tree = None, path: List[str] = []) -> str:
+    def traverse(self, tree = None, path: List[str] = []) -> None:
         if tree is None:
             tree = self.trie
             
