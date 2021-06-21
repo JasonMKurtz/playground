@@ -21,7 +21,7 @@ func main() {
 	w.RegisterWorkflow(app.GreetWorkflow)
 	w.RegisterActivity(app.Greet)
 
-	if err = w.Run(worker.InterruptCh()); err != nil {
+	if err := w.Run(worker.InterruptCh()); err != nil {
 		log.Fatalln("Unable to start worker", err)
 	}
 }
