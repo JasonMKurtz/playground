@@ -78,6 +78,111 @@ func TestCreateRecord(t *testing.T) {
 	}
 }
 
+func TestUpdateRecord(t *testing.T) {
+	f := &fakeAPI{status: 200, body: `{"id":42,"host":"hello-aws","fqdn":"hello-aws.example.com.","type":"CNAME","answer":"new-lb.aws.com","ttl":300}`}
+	c := newTestClient(t, f)
+
+	got, err := c.UpdateRecord(context.Background(), "example.com", 42, Record{ID: 7, FQDN: "x.", Host: "hello-aws", Type: "CNAME", Answer: "new-lb.aws.com", TTL: 300})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name string
+		got  any
+		want any
+	}{
+		{name: "method", got: f.method, want: http.MethodPut},
+		{name: "path has record id", got: f.path, want: "/core/v1/domains/example.com/records/42"},
+		{name: "id not sent in body", got: f.reqBody["id"], want: nil},
+		{name: "fqdn not sent", got: f.reqBody["fqdn"], want: nil},
+		{name: "answer sent", got: f.reqBody["answer"], want: "new-lb.aws.com"},
+		{name: "decoded answer", got: got.Answer, want: "new-lb.aws.com"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if !reflect.DeepEqual(tt.got, tt.want) {
+				t.Errorf("got %v, want %v", tt.got, tt.want)
+			}
+		})
+	}
+}
+
+// records update reads the current record and only changes the flags given.
+// The fake answers both the GET and the PUT with the current record, and
+// remembers the last request (the PUT).
+func TestRecordsUpdateKeepsUnsetFields(t *testing.T) {
+	current := `{"id":42,"host":"hello-aws","fqdn":"hello-aws.example.com.","type":"CNAME","answer":"old-lb.aws.com","ttl":600}`
+
+	tests := []struct {
+		name       string
+		args       []string
+		wantErr    bool
+		wantMethod string
+		wantBody   map[string]any
+	}{
+		{
+			name:       "answer only keeps host, type, ttl",
+			args:       []string{"records", "update", "example.com", "42", "-answer", "new-lb.aws.com"},
+			wantMethod: http.MethodPut,
+			wantBody:   map[string]any{"host": "hello-aws", "type": "CNAME", "answer": "new-lb.aws.com", "ttl": float64(600)},
+		},
+		{
+			name:       "flags before positionals, type upper-cased",
+			args:       []string{"records", "update", "-ttl", "300", "-type", "cname", "example.com", "42"},
+			wantMethod: http.MethodPut,
+			wantBody:   map[string]any{"host": "hello-aws", "type": "CNAME", "answer": "old-lb.aws.com", "ttl": float64(300)},
+		},
+		{
+			name:       "explicit empty host moves it to the apex",
+			args:       []string{"records", "update", "example.com", "42", "-host", ""},
+			wantMethod: http.MethodPut,
+			wantBody:   map[string]any{"host": "", "type": "CNAME", "answer": "old-lb.aws.com", "ttl": float64(600)},
+		},
+		{
+			name:       "no flags is an error and sends nothing",
+			args:       []string{"records", "update", "example.com", "42"},
+			wantErr:    true,
+			wantMethod: "",
+		},
+		{
+			name:       "non-numeric id",
+			args:       []string{"records", "update", "example.com", "abc", "-ttl", "300"},
+			wantErr:    true,
+			wantMethod: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := &fakeAPI{status: 200, body: current}
+			srv := httptest.NewServer(f)
+			t.Cleanup(srv.Close)
+			t.Setenv("NAMECOM_USERNAME", "jason")
+			t.Setenv("NAMECOM_TOKEN", "secret")
+			t.Setenv("NAMECOM_API_URL", srv.URL)
+
+			err := run(context.Background(), tt.args, io.Discard)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("err = %v, wantErr %v", err, tt.wantErr)
+			}
+			if f.method != tt.wantMethod {
+				t.Errorf("last request method = %q, want %q", f.method, tt.wantMethod)
+			}
+			if tt.wantBody == nil {
+				return
+			}
+			if f.path != "/core/v1/domains/example.com/records/42" {
+				t.Errorf("path = %q", f.path)
+			}
+			for k, want := range tt.wantBody {
+				if got := f.reqBody[k]; !reflect.DeepEqual(got, want) {
+					t.Errorf("body[%q] = %v, want %v", k, got, want)
+				}
+			}
+		})
+	}
+}
+
 func TestListRecordsPaginates(t *testing.T) {
 	f := &fakeAPI{status: 200, pages: map[string]string{
 		"1": `{"records":[{"id":1}],"nextPage":2,"lastPage":2}`,
