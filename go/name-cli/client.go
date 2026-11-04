@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -68,6 +69,12 @@ type APIError struct {
 	Path    string
 	Message string `json:"message"`
 	Details string `json:"details"`
+}
+
+// IsNotFound reports whether err is the API saying the thing doesn't exist.
+func IsNotFound(err error) bool {
+	var apiErr *APIError
+	return errors.As(err, &apiErr) && apiErr.Status == http.StatusNotFound
 }
 
 func (e *APIError) Error() string {
@@ -170,6 +177,20 @@ func (c *Client) CreateRecord(ctx context.Context, domain string, r Record) (Rec
 	var created Record
 	err := c.do(ctx, http.MethodPost, domainPath(domain)+"/records", nil, r, &created)
 	return created, err
+}
+
+// UpdateRecord replaces record id with r (PUT, so send every field; see
+// recordsUpdate for read-modify-write).
+func (c *Client) UpdateRecord(ctx context.Context, domain string, id int, r Record) (Record, error) {
+	r.ID, r.FQDN, r.DomainName = 0, "", "" // the ID goes in the path; the rest is read-only
+	var updated Record
+	err := c.do(ctx, http.MethodPut, domainPath(domain)+"/records/"+strconv.Itoa(id), nil, r, &updated)
+	return updated, err
+}
+
+// DeleteRecord removes record id from the zone.
+func (c *Client) DeleteRecord(ctx context.Context, domain string, id int) error {
+	return c.do(ctx, http.MethodDelete, domainPath(domain)+"/records/"+strconv.Itoa(id), nil, nil, nil)
 }
 
 // ListDomains returns every domain in the account, following pagination.

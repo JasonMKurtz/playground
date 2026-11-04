@@ -24,6 +24,9 @@ const usage = `Usage:
   name-cli records list   <domain>
   name-cli records get    <domain> <id>
   name-cli records create <domain> -type CNAME -host www -answer target.example.com [-ttl 300] [-priority 10]
+  name-cli records update <domain> <id> [-type T] [-host H] [-answer A] [-ttl N] [-priority N]
+           (only the flags given change; the rest is kept from the current record)
+  name-cli records delete <domain> <id> [<id>...]
   name-cli domains list
   name-cli domains get    <domain>
   name-cli domains check  <domain> [<domain>...]
@@ -70,6 +73,10 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 		return recordsGet(ctx, c, args[2:], out)
 	case "records create":
 		return recordsCreate(ctx, c, args[2:], out)
+	case "records update":
+		return recordsUpdate(ctx, c, args[2:], out)
+	case "records delete":
+		return recordsDelete(ctx, c, args[2:], out)
 	case "domains list":
 		return domainsList(ctx, c, args[2:], out)
 	case "domains get":
@@ -156,6 +163,129 @@ func recordsCreate(ctx context.Context, c *Client, args []string, out io.Writer)
 	}
 	printRecords(out, []Record{r})
 	return nil
+}
+
+// recordsUpdate changes only the fields whose flags were given. The API's
+// update is a full replace, so it reads the record first and sends it back
+// with those fields changed; otherwise e.g. `-answer x` would reset the TTL.
+func recordsUpdate(ctx context.Context, c *Client, args []string, out io.Writer) error {
+	fs := flag.NewFlagSet("records update", flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	typ := fs.String("type", "", "record type: A, AAAA, ANAME, CNAME, MX, NS, SRV, TXT")
+	host := fs.String("host", "", `host relative to the zone ("" or "@" for apex)`)
+	answer := fs.String("answer", "", "IP, target hostname or TXT value")
+	ttl := fs.Int("ttl", 0, "TTL in seconds (minimum 300)")
+	priority := fs.Int("priority", 0, "priority (MX and SRV only)")
+
+	pos, err := parseInterspersed(fs, args)
+	if err != nil {
+		return fmt.Errorf("%w: %v", errUsage, err)
+	}
+	if len(pos) != 2 {
+		return errUsage
+	}
+	domain := pos[0]
+	id, err := strconv.Atoi(pos[1])
+	if err != nil {
+		return fmt.Errorf("record id %q is not a number", pos[1])
+	}
+
+	// Which flags were actually passed (fs.Visit skips unset ones), so an
+	// explicit -host "" (apex) still counts.
+	set := map[string]bool{}
+	fs.Visit(func(f *flag.Flag) { set[f.Name] = true })
+	if len(set) == 0 {
+		return errors.New("nothing to update: give at least one of -type, -host, -answer, -ttl, -priority")
+	}
+
+	r, err := c.GetRecord(ctx, domain, id)
+	if err != nil {
+		return err
+	}
+	if set["type"] {
+		r.Type = strings.ToUpper(*typ)
+	}
+	if set["host"] {
+		r.Host = *host
+	}
+	if set["answer"] {
+		r.Answer = *answer
+	}
+	if set["ttl"] {
+		r.TTL = *ttl
+	}
+	if set["priority"] {
+		r.Priority = *priority
+	}
+
+	updated, err := c.UpdateRecord(ctx, domain, id, r)
+	if err != nil {
+		return err
+	}
+	printRecords(out, []Record{updated})
+	return nil
+}
+
+// recordsDelete deletes each record ID in turn, looking each one up first so
+// the output shows what was removed. Every ID must be a number before
+// anything is deleted. It stops at the first API error, still listing what
+// it had already deleted.
+//
+// name.com has been seen to answer a DELETE with success and keep the record
+// (2026-11-04: deleting a host's A then AAAA back to back left the AAAA). So
+// each delete is checked with a GET, retried once, and reported as an error
+// if the record is still there.
+func recordsDelete(ctx context.Context, c *Client, args []string, out io.Writer) error {
+	if len(args) < 2 {
+		return errUsage
+	}
+	domain := args[0]
+
+	ids := make([]int, 0, len(args)-1)
+	for _, a := range args[1:] {
+		id, err := strconv.Atoi(a)
+		if err != nil {
+			return fmt.Errorf("record id %q is not a number", a)
+		}
+		ids = append(ids, id)
+	}
+
+	var deleted []Record
+	var err error
+	for _, id := range ids {
+		var r Record
+		if r, err = c.GetRecord(ctx, domain, id); err != nil {
+			break
+		}
+		if err = deleteAndVerify(ctx, c, domain, id); err != nil {
+			break
+		}
+		deleted = append(deleted, r)
+	}
+
+	if len(deleted) > 0 {
+		fmt.Fprintln(out, "Deleted:")
+		printRecords(out, deleted)
+	}
+	return err
+}
+
+// deleteAndVerify deletes record id and confirms it's gone (GET returns 404),
+// deleting once more if it isn't.
+func deleteAndVerify(ctx context.Context, c *Client, domain string, id int) error {
+	for attempt := 1; attempt <= 2; attempt++ {
+		if err := c.DeleteRecord(ctx, domain, id); err != nil {
+			return err
+		}
+		_, err := c.GetRecord(ctx, domain, id)
+		if IsNotFound(err) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return fmt.Errorf("record %d still exists after deleting it twice", id)
 }
 
 func domainsList(ctx context.Context, c *Client, args []string, out io.Writer) error {
