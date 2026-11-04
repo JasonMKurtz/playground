@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -68,6 +69,12 @@ type APIError struct {
 	Path    string
 	Message string `json:"message"`
 	Details string `json:"details"`
+}
+
+// IsNotFound reports whether err is the API saying the thing doesn't exist.
+func IsNotFound(err error) bool {
+	var apiErr *APIError
+	return errors.As(err, &apiErr) && apiErr.Status == http.StatusNotFound
 }
 
 func (e *APIError) Error() string {
@@ -179,6 +186,11 @@ func (c *Client) UpdateRecord(ctx context.Context, domain string, id int, r Reco
 	var updated Record
 	err := c.do(ctx, http.MethodPut, domainPath(domain)+"/records/"+strconv.Itoa(id), nil, r, &updated)
 	return updated, err
+}
+
+// DeleteRecord removes record id from the zone.
+func (c *Client) DeleteRecord(ctx context.Context, domain string, id int) error {
+	return c.do(ctx, http.MethodDelete, domainPath(domain)+"/records/"+strconv.Itoa(id), nil, nil, nil)
 }
 
 // ListDomains returns every domain in the account, following pagination.
